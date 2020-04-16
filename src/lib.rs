@@ -1,7 +1,16 @@
 #[macro_use]
 extern crate str_macro;
+use console::style;
 use std::cmp::Ordering;
 use std::fmt;
+
+fn cyan(t: &str) -> console::StyledObject<&str> {
+    style(t).cyan()
+}
+
+fn green(t: &str) -> console::StyledObject<&str> {
+    style(t).green()
+}
 
 pub enum InsertResult {
     Success,
@@ -15,20 +24,115 @@ pub enum FetchResult {
     Empty,
 }
 
+impl fmt::Display for InsertResult {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            InsertResult::Success => write!(f, "Successfully Inserted"),
+            InsertResult::SuccessBut(items) => {
+                for i in items.iter() {
+                    writeln!(f, "The {} was launched out of your sylladex!", green(i))?;
+                }
+                write!(f, "Successfully Inserted")
+            }
+            InsertResult::CollisionDetected => write!(f, "Collision Detected!"),
+        }
+    }
+}
+impl fmt::Display for FetchResult {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            FetchResult::Empty => write!(f, "Nothing to take!"),
+            FetchResult::Success(item) => write!(f, "Removed {} from sylladex", green(item)),
+            FetchResult::SuccessBut(item, items) => {
+                for i in items.iter() {
+                    writeln!(f, "The {} was launched out of your sylladex!", green(i))?;
+                }
+                write!(f, "Removed {} from sylladex", green(item))
+            }
+        }
+    }
+    //     match result {
+    //         FetchResult::Empty => println!("nothing to take"),
+    //         FetchResult::Success(item) => println!("Removed {} from sylladex", item),
+    //         FetchResult::SuccessBut(_, _) => panic!("this shouldn't happen"),
+    //     };
+}
+
 pub mod john {
     use super::*;
-    pub struct Modus {
+    pub enum Modi {
+        Queue,
+        Stack,
+        Array,
+        QueueStack,
+        ArrayQueueStack,
+    }
+    pub struct QueueStackModus {
         pub items: Vec<String>,
         pub size: usize,
     }
+    pub struct ArrayQSModus {
+        pub array: Vec<QueueStackModus>,
+        pub size: usize,
+    }
 
-    impl Modus {
-        pub fn new(size: usize) -> Modus {
+    impl ArrayQSModus {
+        pub fn new(size: usize) -> ArrayQSModus {
             if size < 1 {
                 panic!("size < 1!!!!")
             }
-            Modus {
+            let mut vec = Vec::<QueueStackModus>::new();
+            for _ in 0..size {
+                vec.push(QueueStackModus::new(size));
+            }
+            ArrayQSModus { array: vec, size }
+        }
+        pub fn put(&mut self, index: usize, is_queue: bool, item: &str) -> InsertResult {
+            if index >= self.size {
+                InsertResult::CollisionDetected
+            } else {
+                let qs = self.array.get_mut(index).unwrap();
+                if is_queue {
+                    qs.queue_put(item)
+                } else {
+                    qs.stack_put(item)
+                }
+            }
+        }
+        pub fn get(&mut self, index: usize, is_queue: bool) -> FetchResult {
+            if index >= self.size {
+                FetchResult::Empty
+            } else {
+                let qs = self.array.get_mut(index).unwrap();
+                if is_queue {
+                    qs.queue_take()
+                } else {
+                    qs.stack_take()
+                }
+            }
+        }
+    }
+
+    impl QueueStackModus {
+        pub fn new(size: usize) -> QueueStackModus {
+            if size < 1 {
+                panic!("size < 1!!!!")
+            }
+            QueueStackModus {
                 items: vec![],
+                size: size,
+            }
+        }
+        pub fn new_array(size: usize) -> QueueStackModus {
+            if size < 1 {
+                panic!("size < 1!!!!")
+            }
+            let mut vec = Vec::<String>::new();
+            for _ in 0..size {
+                vec.push(str!(""));
+            }
+            QueueStackModus {
+                items: vec,
                 size: size,
             }
         }
@@ -61,18 +165,51 @@ pub mod john {
                 FetchResult::Success(self.items.remove(0))
             }
         }
+        pub fn array_put(&mut self, index: usize, item: &str) -> InsertResult {
+            if index > self.size {
+                return InsertResult::CollisionDetected;
+            }
+            let old = self.items.remove(index);
+            self.items.insert(index, str!(item));
+            if old.len() > 0 {
+                InsertResult::SuccessBut(vec![old])
+            } else {
+                InsertResult::Success
+            }
+        }
+        pub fn array_take(&mut self, index: usize) -> FetchResult {
+            if index > self.size {
+                return FetchResult::Empty;
+            }
+            let old = self.items.remove(index);
+            self.items.insert(index, str!(""));
+            if old.len() < 0 {
+                FetchResult::Empty
+            } else {
+                FetchResult::Success(old)
+            }
+        }
     }
 
-    impl fmt::Display for Modus {
+    impl fmt::Display for QueueStackModus {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            writeln!(f, "Captchalogue Deck:")?;
             for index in 0..self.size {
                 let item = self.items.get(index);
-                if let Some(item) = item {
-                    write!(f, " |{}|", item)?;
+                if item.is_some() && item.unwrap().len() > 0 {
+                    write!(f, " |{}|", green(item.unwrap()))?;
                 } else {
                     write!(f, " |_|")?;
                 }
+            }
+            write!(f, "")
+        }
+    }
+
+    impl fmt::Display for ArrayQSModus {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            for index in 0..self.size {
+                let arr = self.array.get(index).unwrap();
+                writeln!(f, "{}: {}", index, arr)?;
             }
             write!(f, "")
         }
@@ -103,6 +240,16 @@ pub mod rose {
                 rbranch: None,
             }
         }
+        fn size(&self) -> usize {
+            let mut rv = 1;
+            if self.rbranch.is_some() {
+                rv += self.rbranch.as_ref().unwrap().size();
+            }
+            if self.lbranch.is_some() {
+                rv += self.lbranch.as_ref().unwrap().size();
+            }
+            rv
+        }
         fn flatten(&self) -> Vec<String> {
             fn flatten_branch(
                 buffer: &mut Vec<String>,
@@ -125,6 +272,24 @@ pub mod rose {
             flatten_branch(&mut strings, "R", &self.rbranch);
             strings
         }
+        fn compactify(&self) -> Vec<String> {
+            fn compactify_branch(buffer: &mut Vec<String>, branch: &Option<Box<TreeBranch>>) {
+                match branch {
+                    Some(b) => {
+                        let mut branch_vec: Vec<String> = b.compactify();
+                        while branch_vec.len() > 0 {
+                            buffer.push(branch_vec.remove(0));
+                        }
+                    }
+                    None => (),
+                }
+            }
+            let mut strings = Vec::<String>::new();
+            strings.push(self.trunk.clone());
+            compactify_branch(&mut strings, &self.lbranch);
+            compactify_branch(&mut strings, &self.rbranch);
+            strings
+        }
         fn add(&mut self, item: &str) {
             match str!(item).cmp(&self.trunk) {
                 Ordering::Less => {
@@ -143,6 +308,29 @@ pub mod rose {
                 }
                 Ordering::Equal => {}
             }
+        }
+        fn depths(&self) -> Vec<u32> {
+            fn depths_impl(branch: &TreeBranch, level: u32) -> Vec<u32> {
+                if branch.lbranch.is_none() && branch.rbranch.is_none() {
+                    return vec![level];
+                } else {
+                    let mut rtvl = Vec::<u32>::new();
+                    if branch.lbranch.is_some() {
+                        rtvl.append(&mut depths_impl(
+                            &branch.lbranch.as_ref().unwrap(),
+                            level + 1,
+                        ));
+                    }
+                    if branch.rbranch.is_some() {
+                        rtvl.append(&mut depths_impl(
+                            &branch.rbranch.as_ref().unwrap(),
+                            level + 1,
+                        ));
+                    }
+                    rtvl
+                }
+            }
+            depths_impl(self, 0)
         }
         fn leaves(&self) -> Vec<&str> {
             if self.lbranch.is_none() && self.rbranch.is_none() {
@@ -198,15 +386,15 @@ pub mod rose {
     impl Modus {
         pub fn new(root: &str) -> Modus {
             Modus {
-                root: TreeBranch {
-                    trunk: str!(root),
-                    lbranch: None,
-                    rbranch: None,
-                },
+                root: TreeBranch::new(root),
             }
         }
-        pub fn add(&mut self, item: &str) {
+        pub fn add(&mut self, item: &str) -> InsertResult {
             self.root.add(item);
+            InsertResult::Success
+        }
+        pub fn size(&self) -> usize {
+            self.root.size()
         }
         pub fn test() -> Modus {
             let mut modus = Modus {
@@ -230,14 +418,60 @@ pub mod rose {
                 _ => FetchResult::Empty,
             }
         }
+        pub fn take_root(&mut self) -> FetchResult {
+            let rv = FetchResult::SuccessBut(self.root.trunk.clone(), self.root.compactify());
+            self.root.lbranch = None;
+            self.root.rbranch = None;
+            self.root.trunk = String::from("");
+            rv
+        }
+        pub fn balance(&mut self) {
+            pub fn balance_impl(mut strings: Vec<String>) -> Vec<String> {
+                let mut len = strings.len();
+                if len < 2 {
+                    return strings;
+                }
+                if strings.len() % 2 == 1 {
+                    len -= 1;
+                }
+                let midpoint = len / 2;
+                let mut new_nodes = Vec::<String>::new();
+                new_nodes.push(strings.remove(midpoint));
+                let half2 = strings.split_off(midpoint);
+                new_nodes.append(&mut balance_impl(strings));
+                new_nodes.append(&mut balance_impl(half2));
+                new_nodes
+            }
+            let mut nodes = self.root.compactify();
+            nodes.sort();
+            let mut new_nodes = balance_impl(nodes);
+            let mut new_tree = TreeBranch::new(&new_nodes.remove(0));
+            for node in new_nodes.iter() {
+                new_tree.add(node);
+            }
+            self.root = new_tree;
+        }
+        pub fn autobalance(&mut self) -> bool {
+            let mut depths = self.root.depths();
+            if depths.len() == 1 {
+                depths.insert(0, 0);
+            }
+            depths.sort();
+            if depths.last().unwrap() - depths.first().unwrap() > 1 {
+                self.balance();
+                true
+            } else {
+                false
+            }
+        }
     }
 
     impl fmt::Display for Modus {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            writeln!(f, "Tree Modus")?;
+            write!(f, "Tree Modus")?;
             let vec = self.root.flatten();
             for v in vec.iter() {
-                writeln!(f, "{}", v)?;
+                write!(f, "\n{}", v)?;
             }
             write!(f, "")
         }
@@ -252,11 +486,12 @@ pub mod dave {
     {
         pub items: [Option<String>; 10],
         pub hash_function: T,
+        pub detect_collisions: bool,
     }
 
-    pub fn hash_default(key: &str) -> usize {
+    pub fn C2V1(key: &str) -> usize {
         let mut total = 0;
-        for c in key.chars() {
+        for c in key.to_lowercase().chars() {
             total += match c {
                 'a' => 1,
                 'e' => 1,
@@ -264,7 +499,25 @@ pub mod dave {
                 'o' => 1,
                 'u' => 1,
                 'y' => 1,
+                ' ' => 0,
                 _ => 2,
+            }
+        }
+        total % 10
+    }
+
+    pub fn C1V2(key: &str) -> usize {
+        let mut total = 0;
+        for c in key.to_lowercase().chars() {
+            total += match c {
+                'a' => 2,
+                'e' => 2,
+                'i' => 2,
+                'o' => 2,
+                'u' => 2,
+                'y' => 2,
+                ' ' => 0,
+                _ => 1,
             }
         }
         total % 10
@@ -278,7 +531,11 @@ pub mod dave {
             Modus {
                 items: [None, None, None, None, None, None, None, None, None, None],
                 hash_function: func,
+                detect_collisions: false,
             }
+        }
+        pub fn toggle_collisions(&mut self) {
+            self.detect_collisions = !self.detect_collisions
         }
         pub fn add(&mut self, keystr: &str) -> InsertResult {
             let key = (self.hash_function)(keystr);
@@ -286,9 +543,13 @@ pub mod dave {
                 self.items[key] = Some(str!(keystr));
                 InsertResult::Success
             } else {
-                let old = vec![self.items[key].as_ref().unwrap().clone()];
-                self.items[key] = Some(str!(keystr));
-                InsertResult::SuccessBut(old)
+                if self.detect_collisions {
+                    InsertResult::CollisionDetected
+                } else {
+                    let old = vec![self.items[key].as_ref().unwrap().clone()];
+                    self.items[key] = Some(str!(keystr));
+                    InsertResult::SuccessBut(old)
+                }
             }
         }
         pub fn get(&mut self, key: &str) -> FetchResult {
