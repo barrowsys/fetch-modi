@@ -353,6 +353,11 @@ fn dave_root() {
                                 hash_function = &|s| dave::C1V2(s);
                                 continue 'root;
                             }
+                            2 => {
+                                term.clear_last_lines(1);
+                                hash_function = &|s| dave::Scrabble(s);
+                                continue 'root;
+                            }
                             // "Scrabble" => hash_function = dave::scrabble,
                             _ => {
                                 term.clear_last_lines(2);
