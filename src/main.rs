@@ -1,37 +1,37 @@
 use console::{style, Term};
 use dialoguer::{theme::ColorfulTheme, Confirmation, Input, Select};
-use fetch_modi::{dave, john, rose, FetchResult, InsertResult};
+use fetch_modi::{dave, john, rose};
 use std::thread;
 use std::time::Duration;
 
 fn select<'a>(prompt: &str, selections: &[&'a str]) -> Option<usize> {
     let term = Term::stdout();
-    term.write_line(prompt);
+    term.write_line(prompt).ok();
     let rv = Select::with_theme(&ColorfulTheme::default())
         .items(selections)
         .default(0)
         .clear(true)
         .interact_opt()
         .unwrap();
-    if rv.is_some() {
-        term.clear_last_lines(1);
-        writeln(prompt, selections[rv.unwrap()]);
+    if let Some(v) = rv {
+        term.clear_last_lines(1).ok();
+        writeln(prompt, selections[v]);
     }
     rv
 }
 
 fn selectd<'a>(prompt: &str, selections: &[&'a str], default: usize) -> Option<usize> {
     let term = Term::stdout();
-    term.write_line(prompt);
+    term.write_line(prompt).ok();
     let rv = Select::with_theme(&ColorfulTheme::default())
         .items(selections)
         .default(default)
         .clear(true)
         .interact_opt()
         .unwrap();
-    if rv.is_some() {
-        term.clear_last_lines(1);
-        writeln(prompt, selections[rv.unwrap()]);
+    if let Some(v) = rv {
+        term.clear_last_lines(1).ok();
+        writeln(prompt, selections[v]);
     }
     rv
 }
@@ -42,17 +42,17 @@ fn confirm(prompt: &str) -> bool {
 
 fn writer<T: std::fmt::Display>(data: T) {
     let line = format!("{}", style(data).red());
-    Term::stdout().write_line(&line);
+    Term::stdout().write_line(&line).ok();
 }
 
 fn writec<T: std::fmt::Display>(data: T) {
     let line = format!("{}", style(data).cyan());
-    Term::stdout().write_line(&line);
+    Term::stdout().write_line(&line).ok();
 }
 
 fn writeln(tag: &str, data: &str) {
     let line = format!("{}: {}", tag, style(data).green());
-    Term::stdout().write_line(&line);
+    Term::stdout().write_line(&line).ok();
 }
 
 fn get_string(prompt: &str) -> String {
@@ -60,7 +60,7 @@ fn get_string(prompt: &str) -> String {
         .with_prompt(prompt)
         .interact()
         .unwrap();
-    Term::stdout().clear_last_lines(1);
+    Term::stdout().clear_last_lines(1).ok();
     writeln(prompt, &r);
     r
 }
@@ -70,7 +70,7 @@ fn get_usize(prompt: &str) -> usize {
         .with_prompt(prompt)
         .interact()
         .unwrap();
-    Term::stdout().clear_last_lines(1);
+    Term::stdout().clear_last_lines(1).ok();
     writeln(prompt, &format!("{}", r));
     r
 }
@@ -111,82 +111,82 @@ fn john_root() {
         let mut ar = john::QueueStackModus::new_array(size);
         let mut arqs = john::ArrayQSModus::new(size);
         match modus {
-            0 => 'modus: loop {
-                term.write_line("");
-                term.write_line("");
+            0 => 'modus0: loop {
+                term.write_line("").ok();
+                term.write_line("").ok();
                 writeln("Fetch Modus", modi[modus]);
                 println!("{}", qs);
                 let command = select("Select Operation", &["Insert", "Take"]);
-                term.clear_last_lines(5);
+                term.clear_last_lines(5).ok();
                 match command {
                     Some(0) => writec(qs.queue_put(&get_string("Item"))),
                     Some(1) => println!("{}", qs.queue_take()),
                     _ => {
                         if confirm("Exit Modus? This will clear your sylldex!") {
-                            break 'modus;
+                            break 'modus0;
                         }
                     }
                 }
             },
-            1 => 'modus: loop {
-                term.write_line("");
-                term.write_line("");
+            1 => 'modus1: loop {
+                term.write_line("").ok();
+                term.write_line("").ok();
                 writeln("Fetch Modus", modi[modus]);
                 println!("{}", qs);
                 let command = select("Select Operation", &["Insert", "Take"]);
-                term.clear_last_lines(5);
+                term.clear_last_lines(5).ok();
                 match command {
                     Some(0) => writec(qs.stack_put(&get_string("Item"))),
                     Some(1) => println!("{}", qs.stack_take()),
                     _ => {
                         if confirm("Exit Modus? This will clear your sylldex!") {
-                            break 'modus;
+                            break 'modus1;
                         }
                     }
                 }
             },
-            2 => 'modus: loop {
-                term.write_line("");
-                term.write_line("");
+            2 => 'modus2: loop {
+                term.write_line("").ok();
+                term.write_line("").ok();
                 writeln("Fetch Modus", modi[modus]);
                 println!("{}", qs);
                 let command = select("Select Operation", &["Insert", "Take Queue", "Take Stack"]);
-                term.clear_last_lines(5);
+                term.clear_last_lines(5).ok();
                 match command {
                     Some(0) => writec(qs.stack_put(&get_string("Item"))),
                     Some(1) => println!("{}", qs.queue_take()),
                     Some(2) => println!("{}", qs.stack_take()),
                     _ => {
                         if confirm("Exit Modus? This will clear your sylldex!") {
-                            break 'modus;
+                            break 'modus2;
                         }
                     }
                 }
             },
-            3 => 'modus: loop {
-                term.write_line("");
-                term.write_line("");
+            3 => 'modus3: loop {
+                term.write_line("").ok();
+                term.write_line("").ok();
                 writeln("Fetch Modus", modi[modus]);
                 println!("{}", ar);
                 let command = select("Select Operation", &["Insert", "Take"]);
-                term.clear_last_lines(5);
+                term.clear_last_lines(5).ok();
                 match command {
                     Some(0) => writec(ar.array_put(get_usize("Index"), &get_string("Item"))),
                     Some(1) => println!("{}", ar.array_take(get_usize("Index"))),
                     _ => {
                         if confirm("Exit Modus? This will clear your sylldex!") {
-                            break 'modus;
+                            break 'modus3;
                         }
                     }
                 }
             },
-            4 => 'modus: loop {
-                term.write_line("");
-                term.write_line("");
+            4 => 'modus4: loop {
+                term.write_line("").ok();
+                term.write_line("").ok();
                 writeln("Fetch Modus", modi[modus]);
                 println!("{}", arqs);
                 let command = select("Select Operation", &["Insert", "Take"]);
-                term.clear_last_lines(5 + size);
+                term.clear_last_lines(5 + size).ok();
                 match command {
                     Some(0) => writec(arqs.put(
                         get_usize("Index"),
@@ -202,7 +202,7 @@ fn john_root() {
                     ),
                     _ => {
                         if confirm("Exit Modus? This will clear your sylldex!") {
-                            break 'modus;
+                            break 'modus4;
                         }
                     }
                 }
@@ -244,15 +244,15 @@ fn rose_root() {
                 }
                 Some(m) => m,
             };
-            term.clear_last_lines(1);
+            term.clear_last_lines(1).ok();
             last_command = command;
             match command {
                 0 => 'modus: loop {
                     if auto_balance && rose.autobalance() {
                         writer("AUTOBALANCING");
                     }
-                    term.write_line("");
-                    term.write_line("");
+                    term.write_line("").ok();
+                    term.write_line("").ok();
                     writeln("Fetch Modus", "Tree");
                     println!("{}", rose);
                     let command = select(
@@ -263,23 +263,22 @@ fn rose_root() {
                             &["Insert", "Take", "Balance"]
                         },
                     );
-                    term.clear_last_lines(5 + rose.size());
+                    term.clear_last_lines(5 + rose.size()).ok();
                     match command {
                         Some(0) => writec(rose.add(&get_string("Item"))),
-                        Some(1) => match take_root {
-                            false => {
+                        Some(1) => {
+                            if take_root {
+                                println!("{}", rose.take_root());
+                                continue 'rootitem;
+                            } else {
                                 let ts = rose.takeables();
                                 let s = select("Leaf", &ts);
-                                if s.is_some() {
-                                    let v = String::from(ts[s.unwrap()]);
+                                if let Some(s) = s {
+                                    let v = String::from(ts[s]);
                                     println!("{}", rose.take(&v))
                                 }
                             }
-                            true => {
-                                println!("{}", rose.take_root());
-                                continue 'rootitem;
-                            }
-                        },
+                        }
                         Some(2) => rose.balance(),
                         _ => break 'modus,
                     };
@@ -293,7 +292,7 @@ fn rose_root() {
 }
 
 fn dave_root() {
-    let mut hash_function: &dyn Fn(&str) -> usize = &|s| dave::C2V1(s);
+    let mut hash_function: &dyn Fn(&str) -> usize = &|s| dave::c2v1(s);
     let mut detect_collisions = false;
     'root: loop {
         let term = Term::stdout();
@@ -320,16 +319,16 @@ fn dave_root() {
                 }
                 Some(m) => m,
             };
-            term.clear_last_lines(1);
+            term.clear_last_lines(1).ok();
             last_command = command;
             match command {
                 0 => 'modus: loop {
-                    term.write_line("");
-                    term.write_line("");
+                    term.write_line("").ok();
+                    term.write_line("").ok();
                     writeln("Fetch Modus", "Hashmap");
                     println!("{}", dave);
                     let command = select("Select Operation", &["Insert", "Take"]);
-                    term.clear_last_lines(16);
+                    term.clear_last_lines(16).ok();
                     match command {
                         Some(0) => println!("{}", dave.add(&get_string("Item"))),
                         Some(1) => println!("{}", dave.get(&get_string("Item"))),
@@ -344,28 +343,28 @@ fn dave_root() {
                     if confirm("Change hash function? This will clear your sylldex!") {
                         match selection {
                             0 => {
-                                term.clear_last_lines(1);
-                                hash_function = &|s| dave::C2V1(s);
+                                term.clear_last_lines(1).ok();
+                                hash_function = &|s| dave::c2v1(s);
                                 continue 'root;
                             }
                             1 => {
-                                term.clear_last_lines(1);
-                                hash_function = &|s| dave::C1V2(s);
+                                term.clear_last_lines(1).ok();
+                                hash_function = &|s| dave::c1v2(s);
                                 continue 'root;
                             }
                             2 => {
-                                term.clear_last_lines(1);
-                                hash_function = &|s| dave::Scrabble(s);
+                                term.clear_last_lines(1).ok();
+                                hash_function = &|s| dave::scrabble(s);
                                 continue 'root;
                             }
                             // "Scrabble" => hash_function = dave::scrabble,
                             _ => {
-                                term.clear_last_lines(2);
+                                term.clear_last_lines(2).ok();
                                 continue 'settings;
                             }
                         }
                     } else {
-                        term.clear_last_lines(2);
+                        term.clear_last_lines(2).ok();
                         continue 'settings;
                     }
                 }

@@ -4,10 +4,6 @@ use console::style;
 use std::cmp::Ordering;
 use std::fmt;
 
-fn cyan(t: &str) -> console::StyledObject<&str> {
-    style(t).cyan()
-}
-
 fn green(t: &str) -> console::StyledObject<&str> {
     style(t).green()
 }
@@ -120,7 +116,7 @@ pub mod john {
             }
             QueueStackModus {
                 items: vec![],
-                size: size,
+                size,
             }
         }
         pub fn new_array(size: usize) -> QueueStackModus {
@@ -131,10 +127,7 @@ pub mod john {
             for _ in 0..size {
                 vec.push(str!(""));
             }
-            QueueStackModus {
-                items: vec,
-                size: size,
-            }
+            QueueStackModus { items: vec, size }
         }
         pub fn queue_put(&mut self, item: &str) -> InsertResult {
             self.items.insert(0, str!(item));
@@ -159,7 +152,7 @@ pub mod john {
             }
         }
         pub fn stack_take(&mut self) -> FetchResult {
-            if self.items.len() == 0 {
+            if self.items.is_empty() {
                 FetchResult::Empty
             } else {
                 FetchResult::Success(self.items.remove(0))
@@ -171,10 +164,10 @@ pub mod john {
             }
             let old = self.items.remove(index);
             self.items.insert(index, str!(item));
-            if old.len() > 0 {
-                InsertResult::SuccessBut(vec![old])
-            } else {
+            if old.is_empty() {
                 InsertResult::Success
+            } else {
+                InsertResult::SuccessBut(vec![old])
             }
         }
         pub fn array_take(&mut self, index: usize) -> FetchResult {
@@ -183,10 +176,10 @@ pub mod john {
             }
             let old = self.items.remove(index);
             self.items.insert(index, str!(""));
-            if old.len() < 0 {
-                FetchResult::Empty
-            } else {
+            if old.is_empty() {
                 FetchResult::Success(old)
+            } else {
+                FetchResult::Empty
             }
         }
     }
@@ -195,8 +188,12 @@ pub mod john {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             for index in 0..self.size {
                 let item = self.items.get(index);
-                if item.is_some() && item.unwrap().len() > 0 {
-                    write!(f, " |{}|", green(item.unwrap()))?;
+                if let Some(item) = item {
+                    if item.is_empty() {
+                        write!(f, " |_|")?;
+                    } else {
+                        write!(f, " |{}|", green(item))?;
+                    }
                 } else {
                     write!(f, " |_|")?;
                 }
@@ -259,7 +256,7 @@ pub mod rose {
                 match branch {
                     Some(b) => {
                         let branch_vec: Vec<String> = b.flatten();
-                        for branch_item in branch_vec.iter() {
+                        for branch_item in &branch_vec {
                             buffer.push(format!(" {} {}", delim, branch_item));
                         }
                     }
@@ -277,7 +274,7 @@ pub mod rose {
                 match branch {
                     Some(b) => {
                         let mut branch_vec: Vec<String> = b.compactify();
-                        while branch_vec.len() > 0 {
+                        while !branch_vec.is_empty() {
                             buffer.push(branch_vec.remove(0));
                         }
                     }
@@ -396,24 +393,11 @@ pub mod rose {
         pub fn size(&self) -> usize {
             self.root.size()
         }
-        pub fn test() -> Modus {
-            let mut modus = Modus {
-                root: TreeBranch::new("Ipsum"),
-            };
-            modus.add("Lorem");
-            modus.add("Dolor");
-            modus.add("Set");
-            modus.add("Amat");
-            modus.add("Exaltus");
-            modus.add("Joshuus");
-            modus
-        }
         pub fn takeables(&self) -> Vec<&str> {
             self.root.leaves()
         }
         pub fn take(&mut self, item: &str) -> FetchResult {
             match self.root.take(item, true) {
-                TakeResult::Empty => FetchResult::Empty,
                 TakeResult::Return(rstr) => FetchResult::Success(rstr),
                 _ => FetchResult::Empty,
             }
@@ -446,7 +430,7 @@ pub mod rose {
             nodes.sort();
             let mut new_nodes = balance_impl(nodes);
             let mut new_tree = TreeBranch::new(&new_nodes.remove(0));
-            for node in new_nodes.iter() {
+            for node in &new_nodes {
                 new_tree.add(node);
             }
             self.root = new_tree;
@@ -470,7 +454,7 @@ pub mod rose {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "Tree Modus")?;
             let vec = self.root.flatten();
-            for v in vec.iter() {
+            for v in &vec {
                 write!(f, "\n{}", v)?;
             }
             write!(f, "")
@@ -489,16 +473,11 @@ pub mod dave {
         pub detect_collisions: bool,
     }
 
-    pub fn C2V1(key: &str) -> usize {
+    pub fn c2v1(key: &str) -> usize {
         let mut total = 0;
         for c in key.to_lowercase().chars() {
             total += match c {
-                'a' => 1,
-                'e' => 1,
-                'i' => 1,
-                'o' => 1,
-                'u' => 1,
-                'y' => 1,
+                'a' | 'e' | 'i' | 'o' | 'u' | 'y' => 1,
                 ' ' => 0,
                 _ => 2,
             }
@@ -506,16 +485,11 @@ pub mod dave {
         total % 10
     }
 
-    pub fn C1V2(key: &str) -> usize {
+    pub fn c1v2(key: &str) -> usize {
         let mut total = 0;
         for c in key.to_lowercase().chars() {
             total += match c {
-                'a' => 2,
-                'e' => 2,
-                'i' => 2,
-                'o' => 2,
-                'u' => 2,
-                'y' => 2,
+                'a' | 'e' | 'i' | 'o' | 'u' | 'y' => 2,
                 ' ' => 0,
                 _ => 1,
             }
@@ -523,36 +497,17 @@ pub mod dave {
         total % 10
     }
 
-    pub fn Scrabble(key: &str) -> usize {
+    pub fn scrabble(key: &str) -> usize {
         let mut total = 0;
         for c in key.to_lowercase().chars() {
             total += match c {
-                'a' => 1,
-                'e' => 1,
-                'i' => 1,
-                'o' => 1,
-                'u' => 1,
-                'l' => 1,
-                'n' => 1,
-                's' => 1,
-                't' => 1,
-                'r' => 1,
-                'd' => 2,
-                'g' => 2,
-                'b' => 3,
-                'c' => 3,
-                'm' => 3,
-                'p' => 3,
-                'f' => 4,
-                'h' => 4,
-                'v' => 4,
-                'w' => 4,
-                'y' => 4,
+                'a' | 'e' | 'i' | 'o' | 'u' | 'l' | 'n' | 's' | 't' | 'r' => 1,
+                'd' | 'g' => 2,
+                'b' | 'c' | 'm' | 'p' => 3,
+                'f' | 'h' | 'v' | 'w' | 'y' => 4,
                 'k' => 5,
-                'j' => 8,
-                'x' => 8,
-                'q' => 10,
-                'z' => 10,
+                'j' | 'x' => 8,
+                'q' | 'z' => 10,
                 _ => 0,
             }
         }
@@ -578,14 +533,12 @@ pub mod dave {
             if self.items[key].is_none() {
                 self.items[key] = Some(str!(keystr));
                 InsertResult::Success
+            } else if self.detect_collisions {
+                InsertResult::CollisionDetected
             } else {
-                if self.detect_collisions {
-                    InsertResult::CollisionDetected
-                } else {
-                    let old = vec![self.items[key].as_ref().unwrap().clone()];
-                    self.items[key] = Some(str!(keystr));
-                    InsertResult::SuccessBut(old)
-                }
+                let old = vec![self.items[key].as_ref().unwrap().clone()];
+                self.items[key] = Some(str!(keystr));
+                InsertResult::SuccessBut(old)
             }
         }
         pub fn get(&mut self, key: &str) -> FetchResult {
