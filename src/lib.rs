@@ -624,7 +624,7 @@ pub mod karkat {
             if let Some(item) = self.vaults.get(index) {
                 let code = item.code;
                 for i in 0..4 {
-                    let mask = 0xF000 >> i * 4;
+                    let mask = 0xF000 >> (i * 4);
                     let c = code & mask;
                     let k = key & mask;
                     rt[i] = c == k;

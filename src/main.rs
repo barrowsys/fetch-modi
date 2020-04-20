@@ -493,7 +493,7 @@ fn karkat_root() {
                     let mut current_roller = 0;
                     let mut roller_positions: [u16; 4] = [0, 0, 0, 0];
                     'decrypt: loop {
-                        let mut t = karkat_m.test(vault, karkat::Modus::from_arr(roller_positions));
+                        let t = karkat_m.test(vault, karkat::Modus::from_arr(roller_positions));
                         term.write_line("").ok();
                         term.write_line("Decryption Tool").ok();
                         term.write_line("").ok();
