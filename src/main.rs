@@ -509,6 +509,7 @@ fn karkat_root() {
                         term.write_line("  ∨  ∨  ∨  ∨  ").ok();
                         let key = term.read_key().unwrap();
                         term.clear_last_lines(6).ok();
+                        let val = karkat::Modus::from_arr(roller_positions);
                         match key {
                             Key::ArrowUp => {
                                 roller_positions[current_roller] =
@@ -522,14 +523,9 @@ fn karkat_root() {
                             Key::ArrowRight => current_roller = current_roller.wrapping_add(1) % 4,
                             Key::Escape => break 'decrypt,
                             Key::Enter => {
-                                match karkat_m
-                                    .take(vault, karkat::Modus::from_arr(roller_positions))
-                                {
-                                    FetchResult::Success(item) => {
-                                        println!("{}", FetchResult::Success(item));
-                                        break 'decrypt;
-                                    }
-                                    _ => (),
+                                if let FetchResult::Success(item) = karkat_m.take(vault, val) {
+                                    println!("{}", FetchResult::Success(item));
+                                    break 'decrypt;
                                 }
                             }
                             Key::Char(c) => {
