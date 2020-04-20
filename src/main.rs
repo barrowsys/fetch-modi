@@ -1,6 +1,7 @@
-use console::{style, Term};
+use console::{style, Key, Term};
 use dialoguer::{theme::ColorfulTheme, Confirmation, Input, Select};
-use fetch_modi::{dave, john, rose};
+use fetch_modi::{dave, john, karkat, rose, FetchResult};
+use radix_fmt::radix;
 use std::thread;
 use std::time::Duration;
 
@@ -79,20 +80,31 @@ fn wait() {
     thread::sleep(Duration::from_millis(300));
 }
 
-// Memory
-// Scrabble hash function
-// Inverted CV hash function
 fn main() {
-    println!("Welcome to the sylladex!");
-    println!("You can press 'q' in a menu to return to its parent.");
+    let term = Term::stdout();
+    println!("--- Log ---");
+    let mut last_user = 0;
     'main: loop {
-        wait();
-        let person = select("Select User", &["John", "Rose", "Dave"]);
+        println!("");
+        println!("");
+        println!("Welcome to the sylladex!");
+        println!("You can press 'q' in a menu to return to its parent.");
+        let ar = &["John", "Rose", "Dave", "Karkat"];
+        let person = match selectd("Select User", ar, last_user) {
+            None => break 'main,
+            Some(p) => {
+                last_user = p;
+                term.clear_last_lines(5).ok();
+                println!("Selected Person: {}", ar[p]);
+                p
+            }
+        };
         match person {
-            Some(0) => john_root(),
-            Some(1) => rose_root(),
-            Some(2) => dave_root(),
-            _ => break 'main,
+            0 => john_root(),
+            1 => rose_root(),
+            2 => dave_root(),
+            3 => karkat_root(),
+            _ => (),
         }
     }
     println!("Exiting...");
@@ -101,110 +113,159 @@ fn main() {
 fn john_root() {
     let size = get_usize("Size of john's sylladex?");
     let term = Term::stdout();
+    let mut last_fm = 0;
     'person: loop {
         let modi = ["Queue", "Stack", "QueueStack", "Array", "Array QueueStack"];
-        let modus = match select("New Fetch Modus", &modi) {
+        let modus = match selectd("New Fetch Modus", &modi, last_fm) {
             None => break 'person,
-            Some(m) => m,
+            Some(m) => {
+                last_fm = m;
+                m
+            }
         };
         let mut qs = john::QueueStackModus::new(size);
         let mut ar = john::QueueStackModus::new_array(size);
         let mut arqs = john::ArrayQSModus::new(size);
+        let mut last_c = 0;
         match modus {
-            0 => 'modus0: loop {
+            0 => 'modus: loop {
                 term.write_line("").ok();
                 term.write_line("").ok();
                 writeln("Fetch Modus", modi[modus]);
                 println!("{}", qs);
-                let command = select("Select Operation", &["Insert", "Take"]);
-                term.clear_last_lines(5).ok();
-                match command {
-                    Some(0) => writec(qs.queue_put(&get_string("Item"))),
-                    Some(1) => println!("{}", qs.queue_take()),
-                    _ => {
+                let command = match selectd("Select Operation", &["Insert", "Take"], last_c) {
+                    None => {
                         if confirm("Exit Modus? This will clear your sylldex!") {
-                            break 'modus0;
+                            break 'modus;
+                        } else {
+                            continue 'modus;
                         }
                     }
+                    Some(n) => {
+                        last_c = n;
+                        n
+                    }
+                };
+                term.clear_last_lines(5).ok();
+                match command {
+                    0 => writec(qs.queue_put(&get_string("Item"))),
+                    1 => println!("{}", qs.queue_take()),
+                    _ => {}
                 }
             },
-            1 => 'modus1: loop {
+            1 => 'modus: loop {
                 term.write_line("").ok();
                 term.write_line("").ok();
                 writeln("Fetch Modus", modi[modus]);
                 println!("{}", qs);
-                let command = select("Select Operation", &["Insert", "Take"]);
-                term.clear_last_lines(5).ok();
-                match command {
-                    Some(0) => writec(qs.stack_put(&get_string("Item"))),
-                    Some(1) => println!("{}", qs.stack_take()),
-                    _ => {
+                let command = match selectd("Select Operation", &["Insert", "Take"], last_c) {
+                    None => {
                         if confirm("Exit Modus? This will clear your sylldex!") {
-                            break 'modus1;
+                            break 'modus;
+                        } else {
+                            continue 'modus;
                         }
                     }
+                    Some(n) => {
+                        last_c = n;
+                        n
+                    }
+                };
+                term.clear_last_lines(5).ok();
+                match command {
+                    0 => writec(qs.stack_put(&get_string("Item"))),
+                    1 => println!("{}", qs.stack_take()),
+                    _ => {}
                 }
             },
-            2 => 'modus2: loop {
+            2 => 'modus: loop {
                 term.write_line("").ok();
                 term.write_line("").ok();
                 writeln("Fetch Modus", modi[modus]);
                 println!("{}", qs);
-                let command = select("Select Operation", &["Insert", "Take Queue", "Take Stack"]);
-                term.clear_last_lines(5).ok();
-                match command {
-                    Some(0) => writec(qs.stack_put(&get_string("Item"))),
-                    Some(1) => println!("{}", qs.queue_take()),
-                    Some(2) => println!("{}", qs.stack_take()),
-                    _ => {
+                let command = match selectd(
+                    "Select Operation",
+                    &["Insert", "Take Queue", "Take Stack"],
+                    last_c,
+                ) {
+                    None => {
                         if confirm("Exit Modus? This will clear your sylldex!") {
-                            break 'modus2;
+                            break 'modus;
+                        } else {
+                            continue 'modus;
                         }
                     }
+                    Some(n) => {
+                        last_c = n;
+                        n
+                    }
+                };
+                term.clear_last_lines(5).ok();
+                match command {
+                    0 => writec(qs.stack_put(&get_string("Item"))),
+                    1 => println!("{}", qs.queue_take()),
+                    2 => println!("{}", qs.stack_take()),
+                    _ => {}
                 }
             },
-            3 => 'modus3: loop {
+            3 => 'modus: loop {
                 term.write_line("").ok();
                 term.write_line("").ok();
                 writeln("Fetch Modus", modi[modus]);
                 println!("{}", ar);
-                let command = select("Select Operation", &["Insert", "Take"]);
-                term.clear_last_lines(5).ok();
-                match command {
-                    Some(0) => writec(ar.array_put(get_usize("Index"), &get_string("Item"))),
-                    Some(1) => println!("{}", ar.array_take(get_usize("Index"))),
-                    _ => {
+                let command = match selectd("Select Operation", &["Insert", "Take"], last_c) {
+                    None => {
                         if confirm("Exit Modus? This will clear your sylldex!") {
-                            break 'modus3;
+                            break 'modus;
+                        } else {
+                            continue 'modus;
                         }
                     }
+                    Some(n) => {
+                        last_c = n;
+                        n
+                    }
+                };
+                term.clear_last_lines(5).ok();
+                match command {
+                    0 => writec(ar.array_put(get_usize("Index"), &get_string("Item"))),
+                    1 => println!("{}", ar.array_take(get_usize("Index"))),
+                    _ => {}
                 }
             },
-            4 => 'modus4: loop {
+            4 => 'modus: loop {
                 term.write_line("").ok();
                 term.write_line("").ok();
                 writeln("Fetch Modus", modi[modus]);
                 println!("{}", arqs);
-                let command = select("Select Operation", &["Insert", "Take"]);
+                let command = match selectd("Select Operation", &["Insert", "Take"], last_c) {
+                    None => {
+                        if confirm("Exit Modus? This will clear your sylldex!") {
+                            break 'modus;
+                        } else {
+                            continue 'modus;
+                        }
+                    }
+                    Some(n) => {
+                        last_c = n;
+                        n
+                    }
+                };
                 term.clear_last_lines(5 + size).ok();
                 match command {
-                    Some(0) => writec(arqs.put(
+                    0 => writec(arqs.put(
                         get_usize("Index"),
                         select("Mode", &["Queue", "Stack"]) == Some(0),
                         &get_string("Item"),
                     )),
-                    Some(1) => println!(
+                    1 => println!(
                         "{}",
                         arqs.get(
                             get_usize("Index"),
                             select("Mode", &["Queue", "Stack"]) == Some(0)
                         )
                     ),
-                    _ => {
-                        if confirm("Exit Modus? This will clear your sylldex!") {
-                            break 'modus4;
-                        }
-                    }
+                    _ => {}
                 }
             },
             _ => break 'person,
@@ -220,6 +281,7 @@ fn rose_root() {
         let mut take_root = false;
         let mut rose = rose::Modus::new(&first_item);
         let mut last_command = 0;
+        let mut last_c = 0;
         'person: loop {
             let settings = [
                 "Use Modus",
@@ -255,18 +317,18 @@ fn rose_root() {
                     term.write_line("").ok();
                     writeln("Fetch Modus", "Tree");
                     println!("{}", rose);
-                    let command = select(
-                        "Select Operation",
-                        if auto_balance {
-                            &["Insert", "Take"]
-                        } else {
-                            &["Insert", "Take", "Balance"]
-                        },
-                    );
+                    let command =
+                        match selectd("Select Operation", &["Insert", "Take", "Balance"], last_c) {
+                            Some(m) => {
+                                last_c = m;
+                                m
+                            }
+                            None => break 'modus,
+                        };
                     term.clear_last_lines(5 + rose.size()).ok();
                     match command {
-                        Some(0) => writec(rose.add(&get_string("Item"))),
-                        Some(1) => {
+                        0 => writec(rose.add(&get_string("Item"))),
+                        1 => {
                             if take_root {
                                 println!("{}", rose.take_root());
                                 continue 'rootitem;
@@ -279,8 +341,8 @@ fn rose_root() {
                                 }
                             }
                         }
-                        Some(2) => rose.balance(),
-                        _ => break 'modus,
+                        2 => rose.balance(),
+                        _ => (),
                     };
                 },
                 1 => auto_balance = !auto_balance,
@@ -297,6 +359,7 @@ fn dave_root() {
     'root: loop {
         let term = Term::stdout();
         let mut last_command = 0;
+        let mut last_command_m = 0;
         let mut dave = dave::Modus::new(hash_function);
         'settings: loop {
             dave.detect_collisions = detect_collisions;
@@ -327,12 +390,19 @@ fn dave_root() {
                     term.write_line("").ok();
                     writeln("Fetch Modus", "Hashmap");
                     println!("{}", dave);
-                    let command = select("Select Operation", &["Insert", "Take"]);
+                    let command =
+                        match selectd("Select Operation", &["Insert", "Take"], last_command_m) {
+                            Some(n) => {
+                                last_command_m = n;
+                                n
+                            }
+                            None => break 'modus,
+                        };
                     term.clear_last_lines(16).ok();
                     match command {
-                        Some(0) => println!("{}", dave.add(&get_string("Item"))),
-                        Some(1) => println!("{}", dave.get(&get_string("Item"))),
-                        _ => break 'modus,
+                        0 => println!("{}", dave.add(&get_string("Item"))),
+                        1 => println!("{}", dave.get(&get_string("Item"))),
+                        _ => (),
                     }
                 },
                 1 => {
@@ -374,44 +444,111 @@ fn dave_root() {
         }
     }
 }
-// fn dave_root() {
-//     let mut dave = dave::Modus::new(dave::hash_default);
-//     loop {
-//         wait();
-//         println!();
-//         println!("Fetch Modus: Hashmap");
-//         println!("{}", dave);
-//         match select("Command", &["insert", "take", "toggle collision detection"]) {
-//             Some(0) => {
-//                 let new_item = get_string("Item");
-//                 match dave.add(&new_item) {
-//                     InsertResult::SuccessBut(items) => {
-//                         println!("Inserted into slot {}", (dave.hash_function)(&new_item));
-//                         for item in items.iter() {
-//                             println!("The \"{}\" fell out of your sylladex", item);
-//                         }
-//                     }
-//                     InsertResult::Success => {
-//                         println!("Inserted into slot {}", (dave.hash_function)(&new_item))
-//                     }
-//                     InsertResult::CollisionDetected => println!(
-//                         "Collision detected in slot {}",
-//                         (dave.hash_function)(&new_item)
-//                     ),
-//                 }
-//             }
-//             Some(1) => {
-//                 let key = get_string("Item to get");
-//                 match dave.get(&key) {
-//                     FetchResult::Success(s) => println!("Successfully removed {} from hashmap", s),
-//                     FetchResult::Empty => {
-//                         println!("No item matching key {}", (dave.hash_function)(&key))
-//                     }
-//                     _ => println!("Failed to remove"),
-//                 }
-//             }
-//             Some(2) => dave.toggle_collisions(),
-//             _ => return,
-//         }
-//     }
-// }
+
+fn karkat_root() {
+    'rootitem: loop {
+        let mut karkat_m = karkat::Modus::new();
+        let term = Term::stdout();
+        let mut last_command = 0;
+        'person: loop {
+            term.write_line("").ok();
+            term.write_line("").ok();
+            writeln("Fetch Modus", "Encryption");
+            println!("{}", karkat_m);
+            let command = match selectd(
+                "Select Operation",
+                &["Encrypt Item", "Decrypt Vault"],
+                last_command,
+            ) {
+                None => {
+                    term.clear_last_lines(5).ok();
+                    if confirm("Exit Modus? This will clear your sylldex!") {
+                        break 'rootitem;
+                    } else {
+                        continue 'person;
+                    }
+                }
+                Some(m) => {
+                    last_command = m;
+                    m
+                }
+            };
+            term.clear_last_lines(5).ok();
+            match command {
+                0 => writec(karkat_m.add(&get_string("Item"))),
+                1 => {
+                    if karkat_m.size() == 0 {
+                        writer("No vaults!");
+                        continue 'person;
+                    }
+                    let vault = get_usize("Vault");
+                    if vault >= karkat_m.size() {
+                        writer(format!(
+                            "Cannot find vault {}, please input a number in the range 0-{}",
+                            vault,
+                            karkat_m.size() - 1
+                        ));
+                        continue 'person;
+                    }
+                    let mut current_roller = 0;
+                    let mut roller_positions: [u16; 4] = [0, 0, 0, 0];
+                    'decrypt: loop {
+                        let mut t = karkat_m.test(vault, karkat::Modus::from_arr(roller_positions));
+                        term.write_line("").ok();
+                        term.write_line("Decryption Tool").ok();
+                        term.write_line("").ok();
+                        term.write_line("  ∧  ∧  ∧  ∧  ").ok();
+                        for i in 0..4 {
+                            let number = format!("{:#}", radix(roller_positions[i], 16));
+                            let number = if t[i] {
+                                style(number).green()
+                            } else {
+                                style(number)
+                            };
+                            if i == current_roller {
+                                term.write_str(&format!(" >{}", number)).ok();
+                            } else {
+                                term.write_str(&format!("  {}", number)).ok();
+                            }
+                        }
+                        term.write_line("").ok();
+                        term.write_line("  ∨  ∨  ∨  ∨  ").ok();
+                        let key = term.read_key().unwrap();
+                        term.clear_last_lines(6).ok();
+                        match key {
+                            Key::ArrowUp => {
+                                roller_positions[current_roller] =
+                                    (roller_positions[current_roller].wrapping_add(1)) % 16
+                            }
+                            Key::ArrowDown => {
+                                roller_positions[current_roller] =
+                                    (roller_positions[current_roller].wrapping_sub(1)) % 16
+                            }
+                            Key::ArrowLeft => current_roller = current_roller.wrapping_sub(1) % 4,
+                            Key::ArrowRight => current_roller = current_roller.wrapping_add(1) % 4,
+                            Key::Escape => break 'decrypt,
+                            Key::Enter => {
+                                match karkat_m
+                                    .take(vault, karkat::Modus::from_arr(roller_positions))
+                                {
+                                    FetchResult::Success(item) => {
+                                        println!("{}", FetchResult::Success(item));
+                                        break 'decrypt;
+                                    }
+                                    _ => (),
+                                }
+                            }
+                            Key::Char(c) => {
+                                if c == 'q' {
+                                    break 'decrypt;
+                                }
+                            }
+                            _ => (),
+                        };
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+}

@@ -571,3 +571,88 @@ pub mod dave {
         }
     }
 }
+
+pub mod karkat {
+    use super::*;
+    pub struct Vault {
+        item: String,
+        pub code: u16,
+    }
+    pub struct Modus {
+        pub vaults: Vec<Vault>,
+    }
+
+    impl Vault {
+        pub fn new(item: &str) -> Self {
+            Self {
+                item: String::from(item),
+                code: Vault::checksum(item),
+            }
+        }
+        pub fn checksum(s: &str) -> u16 {
+            let mut sum: u16 = 0;
+            for c in s.chars() {
+                let mut buffer: [u16; 2] = [0, 0];
+                c.encode_utf16(&mut buffer);
+                sum = (sum >> 1) + ((sum & 1) << 15);
+                sum = sum.wrapping_add(buffer[0] ^ buffer[1]);
+            }
+            sum
+        }
+    }
+    impl Modus {
+        pub fn new() -> Modus {
+            Modus { vaults: vec![] }
+        }
+        pub fn add(&mut self, name: &str) -> InsertResult {
+            self.vaults.push(Vault::new(name));
+            InsertResult::Success
+        }
+        pub fn size(&self) -> usize {
+            self.vaults.len()
+        }
+        pub fn from_arr(arr: [u16; 4]) -> u16 {
+            let mut r = 0;
+            r += (arr[3] & 0x000F) << 0;
+            r += (arr[2] & 0x000F) << 4;
+            r += (arr[1] & 0x000F) << 8;
+            r += (arr[0] & 0x000F) << 12;
+            r
+        }
+        pub fn test(&self, index: usize, key: u16) -> [bool; 4] {
+            let mut rt: [bool; 4] = [false, false, false, false];
+            if let Some(item) = self.vaults.get(index) {
+                let code = item.code;
+                for i in 0..4 {
+                    let mask = 0xF000 >> i * 4;
+                    let c = code & mask;
+                    let k = key & mask;
+                    rt[i] = c == k;
+                }
+                rt
+            } else {
+                rt
+            }
+        }
+        pub fn take(&mut self, index: usize, key: u16) -> FetchResult {
+            if let Some(item) = self.vaults.get(index) {
+                if item.code == key {
+                    FetchResult::Success(self.vaults.remove(index).item)
+                } else {
+                    FetchResult::Empty
+                }
+            } else {
+                FetchResult::Empty
+            }
+        }
+    }
+
+    impl fmt::Display for Modus {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            for i in 0..self.vaults.len() {
+                write!(f, " |{}|", i)?;
+            }
+            write!(f, "")
+        }
+    }
+}
