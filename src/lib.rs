@@ -578,6 +578,7 @@ pub mod karkat {
         item: String,
         pub code: u16,
     }
+    #[derive(Default)]
     pub struct Modus {
         pub vaults: Vec<Vault>,
     }
@@ -600,10 +601,8 @@ pub mod karkat {
             sum
         }
     }
+
     impl Modus {
-        pub fn new() -> Modus {
-            Modus { vaults: vec![] }
-        }
         pub fn add(&mut self, name: &str) -> InsertResult {
             self.vaults.push(Vault::new(name));
             InsertResult::Success
@@ -613,7 +612,7 @@ pub mod karkat {
         }
         pub fn from_arr(arr: [u16; 4]) -> u16 {
             let mut r = 0;
-            r += (arr[3] & 0x000F) << 0;
+            r += arr[3] & 0x000F;
             r += (arr[2] & 0x000F) << 4;
             r += (arr[1] & 0x000F) << 8;
             r += (arr[0] & 0x000F) << 12;
@@ -623,11 +622,11 @@ pub mod karkat {
             let mut rt: [bool; 4] = [false, false, false, false];
             if let Some(item) = self.vaults.get(index) {
                 let code = item.code;
-                for i in 0..4 {
+                for (i, item) in rt.iter_mut().enumerate() {
                     let mask = 0xF000 >> (i * 4);
                     let c = code & mask;
                     let k = key & mask;
-                    rt[i] = c == k;
+                    *item = c == k;
                 }
                 rt
             } else {

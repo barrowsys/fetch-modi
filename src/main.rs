@@ -76,10 +76,6 @@ fn get_usize(prompt: &str) -> usize {
     r
 }
 
-fn wait() {
-    thread::sleep(Duration::from_millis(300));
-}
-
 fn main() {
     let term = Term::stdout();
     println!("--- Log ---");
@@ -447,7 +443,7 @@ fn dave_root() {
 
 fn karkat_root() {
     'rootitem: loop {
-        let mut karkat_m = karkat::Modus::new();
+        let mut karkat_m = karkat::Modus::default();
         let term = Term::stdout();
         let mut last_command = 0;
         'person: loop {
