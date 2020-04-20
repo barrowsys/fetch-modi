@@ -2,8 +2,6 @@ use console::{style, Key, Term};
 use dialoguer::{theme::ColorfulTheme, Confirmation, Input, Select};
 use fetch_modi::{dave, john, karkat, rose, FetchResult};
 use radix_fmt::radix;
-use std::thread;
-use std::time::Duration;
 
 fn select<'a>(prompt: &str, selections: &[&'a str]) -> Option<usize> {
     let term = Term::stdout();
@@ -81,8 +79,8 @@ fn main() {
     println!("--- Log ---");
     let mut last_user = 0;
     'main: loop {
-        println!("");
-        println!("");
+        println!();
+        println!();
         println!("Welcome to the sylladex!");
         println!("You can press 'q' in a menu to return to its parent.");
         let ar = &["John", "Rose", "Dave", "Karkat"];
