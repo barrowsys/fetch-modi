@@ -9,9 +9,7 @@ repository = "https://github.com/barrowsys/fetch-modi"
 readme = "README.md"
 categories = ["data-structures", "command-line-utilities", "games", "simulation"]
 keywords = ["homestuck"]
-exclude = [
-	".github/*"
-]
+exclude = [".github/*"]
 
 [dependencies]
 str-macro = "0.1.4"
